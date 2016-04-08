@@ -155,7 +155,8 @@ class BaseObject(object):
             # Add id to param list
             kwargs.update(self.id_generator.get_params(self.json))
             resp = await oper(**kwargs)
-            return promote(self.client, resp, oper.json)
+            enriched = await promote(self.client, resp, oper.json)
+            return enriched
 
         return enrich_operation
 
@@ -342,20 +343,20 @@ class Mailbox(BaseObject):
             client, client.swagger.mailboxes, mailbox_json, None)
 
 
-def promote(client, resp, operation_json):
+async def promote(client, resp, operation_json):
     """Promote a response from the request's HTTP response to a first class
      object.
 
     :param client:  ARI client.
     :type  client:  client.Client
-    :param resp:    HTTP resonse.
-    :type  resp:    requests.Response
+    :param resp:    aiohttp client resonse.
+    :type  resp:    aiohttp.ClientResponse
     :param operation_json: JSON model from Swagger API.
     :type  operation_json: dict
     :return:
     """
     log.debug("resp=%s",resp)
-    #assert resp.status == 200
+    resp = await resp.text()
     if resp == "":
         return None
     response_class = operation_json['responseClass']
@@ -370,6 +371,8 @@ def promote(client, resp, operation_json):
         if is_list:
             return [factory(client, obj) for obj in resp_json]
         return factory(client, resp_json)
+    if resp.status_code == requests.codes.no_content:
+        return None
     log.info("No mapping for %s; returning JSON" % response_class)
     return json.loads(resp)
 

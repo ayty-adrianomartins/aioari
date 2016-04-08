@@ -60,6 +60,8 @@ async def on_end(channel, event):
         """
         print(channel, event)
 
+sessions = {}
+
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
 client = ari.connect('http://192.168.254.60:8088/', 'remari', '@rip@$$', loop=loop)
