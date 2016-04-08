@@ -9,7 +9,7 @@ import json
 import urllib
 import aioswaggerpy.client
 
-from ari.model import *
+from aioari.model import *
 
 log = logging.getLogger(__name__)
 
