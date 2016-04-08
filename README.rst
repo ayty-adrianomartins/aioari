@@ -1,3 +1,10 @@
+Asynchronous clone of https://github.com/asterisk/ari-py
+
+Uses aioswagger-py
+
+
+
+
 About
 -----
 
@@ -151,6 +158,8 @@ License
 -------
 
 Copyright (c) 2013-2014, Digium, Inc. All rights reserved.
+
+Copyright (c) 2016, Denis Fokin. All rights reserved.
 
 Swagger.py is licensed with a `BSD 3-Clause
 License <http://opensource.org/licenses/BSD-3-Clause>`__.
