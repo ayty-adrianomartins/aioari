@@ -7,7 +7,7 @@
 
 import json
 import urllib
-import aioswaggerpy.client
+import swaggerpy.client
 
 from aioari.model import *
 
@@ -23,11 +23,11 @@ class AsyncClient(object):
 
     def __init__(self, base_url, http_client):
         url = urllib.parse.urljoin(base_url, "ari/api-docs/resources.json")
-        self.swagger = aioswaggerpy.client.AsyncSwaggerClient(
+        self.swagger = swaggerpy.client.AsyncSwaggerClient(
             http_client=http_client, url=url)
 
-    async def async_init(self):
-        await self.swagger.async_init()
+    async def init(self):
+        await self.swagger.init()
         # Extract models out of the events resource
         events = [api['api_declaration']
                   for api in self.swagger.api_docs['apis']

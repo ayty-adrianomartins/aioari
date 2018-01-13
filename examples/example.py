@@ -65,7 +65,7 @@ sessions = {}
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
 client = ari.connect('http://192.168.254.60:8088/', 'remari', '@rip@$$', loop=loop)
-loop.run_until_complete(client.async_init())
+loop.run_until_complete(client.init())
 client.on_channel_event('StasisStart', on_start)
 client.on_channel_event('StasisEnd', on_end)
 # Run the WebSocket

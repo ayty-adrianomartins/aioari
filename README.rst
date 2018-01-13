@@ -1,6 +1,6 @@
 Asynchronous clone of https://github.com/asterisk/ari-py
 
-Uses aioswagger-py
+Uses async version of swagger-py
 
 
 

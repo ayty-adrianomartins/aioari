@@ -7,7 +7,7 @@
 """
 
 import aioari.asyncclient
-import aioswaggerpy.http_client
+import swaggerpy.http_client
 
 AsyncClient = asyncclient.AsyncClient
 
@@ -20,5 +20,5 @@ def connect(base_url, username, password, loop=None):
     :param password: ARI password.
     :return:
     """
-    http_client = aioswaggerpy.http_client.AsynchronousHttpClient(username, password, loop)
+    http_client = swaggerpy.http_client.AsynchronousHttpClient(username, password, loop)
     return AsyncClient(base_url, http_client)
