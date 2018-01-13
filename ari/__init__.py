@@ -6,7 +6,7 @@
 """ARI client library
 """
 
-import aioari.asyncclient
+import ari.asyncclient
 import swaggerpy.http_client
 
 AsyncClient = asyncclient.AsyncClient
