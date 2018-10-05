@@ -69,7 +69,7 @@ class Repository(object):
                 if not (hasattr(oper, '__call__') and hasattr(oper, 'json')):
                     raise AttributeError(
                         "'%r' object has no attribute '%s'" % (self.p, self.item))
-                res = await self.client.run_operation(oper, **kwargs)
+                res = await self.p.client.run_operation(oper, **kwargs)
                 res = await promote(self.p.client, res, oper.json)
                 return res
         return AttrOp(self,item)
