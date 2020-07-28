@@ -86,39 +86,58 @@ remote procedure calls. The current implementation is synchronous, which means
 that if anything were to happen to slow responses (slow network, packet loss,
 system load, etc.), then the entire application could be affected.
 
-Examples
-========
+Examples Python3.7
+==================
 
 .. code:: Python
 
     import asyncio
     import aioari
+    from aioari import Client
+    from aioari.model import Channel
+    from contextlib import suppress
+    import logging
+    from typing import Dict
 
-    client = await aioari.connect('http://localhost:8088/', 'hey', 'peekaboo')
 
-    def on_dtmf(channel, event):
+    async def on_dtmf(channel: Channel, event: Dict) -> None:
+        print(type(channel), type(event))
         digit = event['digit']
         if digit == '#':
-            channel.play(media='sound:goodbye')
-            channel.continueInDialplan()
+            await channel.play(media='sound:goodbye')
+            await channel.continueInDialplan()
         elif digit == '*':
-            channel.play(media='sound:asterisk-friend')
+            await channel.play(media='sound:asterisk-friend')
         else:
-            channel.play(media='sound:digits/%s' % digit)
+            await channel.play(media='sound:digits/%s' % digit)
 
 
-    def on_start(channel, event):
+    async def on_start(objs: Dict, event: Dict, client: Client) -> None:
+        channel = objs['channel']
         channel.on_event('ChannelDtmfReceived', on_dtmf)
-        channel.answer()
-        channel.play(media='sound:hello-world')
+        await channel.answer()
+        await channel.play(media='sound:hello-world')
 
 
-    client.on_channel_event('StasisStart', on_start)
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(client.run(apps="hello"))
+    async def on_end(objs: Dict, event: Dict, client: Client) -> None:
+        print('Exit from Stasis')
 
 
+    async def main():
+        client = await aioari.connect('http://localhost:8088/', 'test', 'test_password')
+        client.on_channel_event('StasisStart', on_start, client)
+        client.on_channel_event('StasisEnd', on_end, client)
+
+        try:
+            await client.run(apps="hello-world")
+        finally:
+            await client.close()
+
+
+    if __name__ == '__main__':
+        logging.basicConfig(level=logging.INFO)
+        with suppress(KeyboardInterrupt):
+            asyncio.run(main())
 
 Development
 -----------
@@ -151,11 +170,6 @@ the code coverage report. HTML versions of the reports are put in
     $ ./setup.py nosetests # run unit tests
     $ ./setup.py bdist_egg # build distributable
 
-TODO
-====
-
- * Create asynchronous bindings that can be used with Twisted, Tornado, etc.
- * Add support for Python 3
 
 License
 -------
@@ -164,7 +178,7 @@ Copyright (c) 2013-2014, Digium, Inc.
 Copyright (c) 2016, Denis Fokin.
 Copyright (c) 2018, Matthias Urlichs.
 
-.. 
+..
    The original text stated "All rights reserved" which does not make sense
    given a LICENSE.txt file with a BSD-3 license. Thus I removed it.
    -- Matthias Urlichs
