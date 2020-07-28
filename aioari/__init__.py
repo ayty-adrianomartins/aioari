@@ -6,9 +6,11 @@
 """AIOARI client library
 """
 
-from aioari.client import Client
+import asyncio
+from aioari.client import Client, log
 from aioswagger11.http_client import AsynchronousHttpClient, ApiKeyAuthenticator
 import urllib.parse
+
 
 async def connect(base_url, username, password, loop=None):
     """Helper method for easily async connecting to ARI.
@@ -20,8 +22,14 @@ async def connect(base_url, username, password, loop=None):
     :return:
     """
     host = urllib.parse.urlparse(base_url).netloc.split(':')[0]
-    http_client = AsynchronousHttpClient(loop=loop, 
+    http_client = AsynchronousHttpClient(loop=loop,
         auth=ApiKeyAuthenticator(host, username+':'+password))
     client = Client(base_url, http_client)
-    await client.init()
-    return client
+    while True:
+        try:
+            await client.init()
+        except Exception as ex:
+            log.error(ex)
+            await asyncio.sleep(1)
+            continue
+        return client

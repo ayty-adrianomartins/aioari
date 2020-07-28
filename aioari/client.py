@@ -9,6 +9,7 @@ import json
 import urllib
 import aiohttp
 import aioswagger11.client
+import asyncio
 
 from aioari.model import *
 
@@ -23,6 +24,10 @@ class Client(object):
     """
 
     def __init__(self, base_url, http_client):
+        self.base_url = base_url
+        self.http_client = http_client
+        self.app = None
+        self.websockets = None
         url = urllib.parse.urljoin(base_url, "ari/api-docs/resources.json")
         self.swagger = aioswagger11.client.SwaggerClient(
             http_client=http_client, url=url)
@@ -63,9 +68,35 @@ class Client(object):
         This method will close any currently open WebSockets, and close the
         underlying Swaggerclient.
         """
-        for ws in list(self.websockets): # changes during processing
+        unsubscribe = {
+            'channel': '__AST_CHANNEL_ALL_TOPIC',
+            'bridge': '__AST_BRIDGE_ALL_TOPIC',
+            'endpoint': '__AST_ENDPOINT_ALL_TOPIC',
+            'deviceState': '__AST_DEVICE_STATE_ALL_TOPIC'
+        }
+        unsubscribe_str = ','.join([('%s:%s' % (key, value)) for (key, value) in unsubscribe.items()])
+
+        try:
+            full_url = '%sari/applications/%s/subscription?eventSource=%s' % (self.base_url, self.app, unsubscribe_str)
+            await self.http_client.request('delete', full_url)
+        except Exception as ex:
+            pass
+
+        for ws in list(self.websockets):  # changes during processing
+            try:
+                host, port = ws.get_extra_info('peername')
+            except TypeError:
+                # host, port = 'unknown', 'unknown'
+                self.websockets.remove(ws)
+                await ws.close()
+                continue
+
+            log.info('Successfully disconnected from ws://%s:%s, app: %s' % (host, port, self.app))
+            self.websockets.remove(ws)
             await ws.close()
+
         await self.swagger.close()
+
 
     def get_repo(self, name):
         """Get a specific repo by name.
@@ -125,19 +156,26 @@ class Client(object):
         :param apps: Application (or list of applications) to connect for
         :type  apps: str or list of str
         """
-        if isinstance(apps, list):
-            apps = ','.join(apps)
-        ws = await self.swagger.events.eventWebsocket(app=apps)
-        self.websockets.add(ws)
+        self.app = apps.split('&')[0]
+        while True:
+            if isinstance(apps, list):
+                apps = ','.join(apps)
+            try:
+                ws = await self.swagger.events.eventWebsocket(app=apps)
+            except (OSError, aiohttp.ClientConnectionError, aiohttp.WSServerHandshakeError) as ex:
+                log.error(ex)
+                await asyncio.sleep(1)
+                continue
+            host, port = ws.get_extra_info('peername')
+            log.info('Successfully connected to ws://%s:%s, app: %s' % (host, port, self.app))
+            self.websockets.add(ws)
 
-        # For tests
-        for m in _test_msgs:
-            ws.push(m)
-        try:
+            # For tests
+            for m in _test_msgs:
+                ws.push(m)
+
             await self.__run(ws)
-        finally:
-            await ws.close()
-            self.websockets.remove(ws)
+
 
     def on_event(self, event_type, event_cb, *args, **kwargs):
         """Register callback for events with given type.
