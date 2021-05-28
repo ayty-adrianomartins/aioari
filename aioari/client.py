@@ -147,7 +147,7 @@ class Client(object):
                 except Exception as e:
                     self.exception_handler(e)
 
-    async def run(self, apps, *, _test_msgs=[]):
+    async def run(self, apps, subscribe_all=False, *, _test_msgs=[]):
         """Connect to the WebSocket and begin processing messages.
 
         This method will block until all messages have been received from the
@@ -161,7 +161,7 @@ class Client(object):
             if isinstance(apps, list):
                 apps = ','.join(apps)
             try:
-                ws = await self.swagger.events.eventWebsocket(app=apps)
+                ws = await self.swagger.events.eventWebsocket(app=apps, subscribeAll=subscribe_all)
             except (OSError, aiohttp.ClientConnectionError, aiohttp.WSServerHandshakeError) as ex:
                 log.error(ex)
                 await asyncio.sleep(1)
