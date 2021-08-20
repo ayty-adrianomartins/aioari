@@ -226,6 +226,34 @@ class Channel(BaseObject):
             client, client.swagger.channels, channel_json,
             client.on_channel_event)
 
+    async def getChannelVar(self, variable):
+        """Overwrite the default generated Swagger function because the
+        value returned by this API call is not a self-sustained object.
+        We need to handle it differently.
+
+        :param variable:  Name of the variable to query.
+        :type  variable:  str
+        """
+        log.debug('Issuing command getChannelVar')
+        kwargs = {'variable': variable}
+        kwargs.update(self.id_generator.get_params(self.json))
+        oper = getattr(self.api, 'getChannelVar', None)
+        resp = await self.client.run_operation(oper, **kwargs)
+
+        # Instead of promoting to a first-class object, we need to extract the
+        # variable's value manually.
+        log.debug("resp=%s", resp)
+        res = await self.client.get_resp_text(resp)
+        log.debug(f"res={res}")
+        if res == "":
+            return None
+
+        if resp.status == HTTPNoContent.status_code:
+            return None
+
+        j = json.loads(res)
+        log.debug(f'Channel {self.id} variable {variable}: {j["value"]}')
+        return j['value']
 
 class Bridge(BaseObject):
     """First class object API.
