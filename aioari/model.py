@@ -22,7 +22,7 @@ import logging
 import json
 import inspect
 
-from aiohttp.web_exceptions import HTTPNoContent
+from aiohttp.web_exceptions import HTTPNoContent, HTTPNotFound
 
 log = logging.getLogger(__name__)
 
@@ -238,22 +238,27 @@ class Channel(BaseObject):
         kwargs = {'variable': variable}
         kwargs.update(self.id_generator.get_params(self.json))
         oper = getattr(self.api, 'getChannelVar', None)
-        resp = await self.client.run_operation(oper, **kwargs)
+        try:
+            resp = await self.client.run_operation(oper, **kwargs)
 
-        # Instead of promoting to a first-class object, we need to extract the
-        # variable's value manually.
-        log.debug("resp=%s", resp)
-        res = await self.client.get_resp_text(resp)
-        log.debug(f"res={res}")
-        if res == "":
+            # Instead of promoting to a first-class object, we need to extract the
+            # variable's value manually.
+            log.debug("resp=%s", resp)
+            res = await self.client.get_resp_text(resp)
+            log.debug(f"res={res}")
+            if res == "":
+                return None
+
+            if resp.status == HTTPNoContent.status_code:
+                return None
+
+            j = json.loads(res)
+            log.debug(f'Channel {self.id} variable {variable}: {j["value"]}')
+            return j['value']
+        
+        except HTTPNotFound:
             return None
 
-        if resp.status == HTTPNoContent.status_code:
-            return None
-
-        j = json.loads(res)
-        log.debug(f'Channel {self.id} variable {variable}: {j["value"]}')
-        return j['value']
 
 class Bridge(BaseObject):
     """First class object API.
