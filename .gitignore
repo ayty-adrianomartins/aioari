@@ -6,3 +6,4 @@ dist/
 nosetests.xml
 build
 .cache
+/.pybuild/

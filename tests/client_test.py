@@ -7,7 +7,7 @@ import json
 import pytest
 from urllib.request import urlopen
 
-from aioari_test.utils import AriTestCase
+from .utils import AriTestCase
 
 
 GET = httpretty.GET

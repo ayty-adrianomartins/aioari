@@ -11,7 +11,7 @@ from setuptools import setup
 
 setup(
     name="aioari",
-    version="0.9.1",
+    version="0.10.0",
     license="BSD 3-Clause License",
     description="Asynchronous library for accessing the Asterisk REST Interface",
     long_description=open(os.path.join(os.path.dirname(__file__),

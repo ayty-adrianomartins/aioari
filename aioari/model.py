@@ -20,6 +20,7 @@ Stasis events relating to that object.
 import re
 import logging
 import json
+import inspect
 
 from aiohttp.web_exceptions import HTTPNoContent
 
@@ -69,7 +70,7 @@ class Repository(object):
                 if not (hasattr(oper, '__call__') and hasattr(oper, 'json')):
                     raise AttributeError(
                         "'%r' object has no attribute '%s'" % (self.p, self.item))
-                res = await oper(**kwargs)
+                res = await self.p.client.run_operation(oper, **kwargs)
                 res = await promote(self.p.client, res, oper.json)
                 return res
         return AttrOp(self,item)
@@ -167,7 +168,7 @@ class BaseObject(object):
             """
             # Add id to param list
             kwargs.update(self.id_generator.get_params(self.json))
-            resp = await oper(**kwargs)
+            resp = await self.client.run_operation(oper, **kwargs)
             enriched = await promote(self.client, resp, oper.json)
             return enriched
 
@@ -198,7 +199,7 @@ class BaseObject(object):
                 if self.id == objects.id:
                     res = fn(objects, event, *args, **kwargs)
             # The callback may or may not be an async function
-            if hasattr(res,'__await__'):
+            if inspect.iscoroutine(res):
                 await res
             return res
 
@@ -375,7 +376,7 @@ async def promote(client, resp, operation_json):
     :return:
     """
     log.debug("resp=%s",resp)
-    res = await resp.text()
+    res = await client.get_resp_text(resp)
     if res == "":
         return None
     response_class = operation_json['responseClass']

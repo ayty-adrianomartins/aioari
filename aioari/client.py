@@ -11,8 +11,10 @@ import aiohttp
 import aioswagger11.client
 import asyncio
 
-from aioari.model import *
+from aioari.model import Repository
+from aioari.model import Channel, Bridge, Playback, LiveRecording, StoredRecording, Endpoint, DeviceState, Sound
 
+import logging
 log = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ class Client(object):
         self.swagger = aioswagger11.client.SwaggerClient(
             http_client=http_client, url=url)
 
-    async def init(self):
+    async def init(self, RepositoryFactory=Repository):
         await self.swagger.init()
         # Extract models out of the events resource
         events = [api['api_declaration']
@@ -107,6 +109,18 @@ class Client(object):
         """
         return self.repositories.get(name)
 
+    async def run_operation(self, oper, **kwargs):
+        """Trigger an operation.
+        Overrideable for Trio.
+        """
+        return await oper(**kwargs)
+
+    async def get_resp_text(self, resp):
+        """Get the text from a response.
+        Overrideable for Trio.
+        """
+        return await resp.text()
+
     async def __run(self, ws):
         """Drains all messages from a WebSocket, sending them to the client's
         listeners.
@@ -129,23 +143,27 @@ class Client(object):
             if not isinstance(msg_json, dict) or 'type' not in msg_json:
                 log.error("Invalid event: %s" % msg)
                 continue
+            await self.process_ws(msg_json)
 
-            listeners = list(self.event_listeners.get(msg_json['type'], [])) \
-                      + list(self.event_listeners.get('*', []))
-            for listener in listeners:
-                # noinspection PyBroadException
-                try:
-                    callback, args, kwargs = listener
-                    log.debug("cb_type=%s" % type(callback))
-                    args = args or ()
-                    kwargs = kwargs or {}
-                    cb = callback(msg_json, *args, **kwargs)
-                    # The callback may or may not be an async function
-                    if hasattr(cb,'__await__'):
-                        await cb
+    async def process_ws(self, msg):
+        """Process one incoming websocket message"""
 
-                except Exception as e:
-                    self.exception_handler(e)
+        listeners = list(self.event_listeners.get(msg['type'], [])) \
+                    + list(self.event_listeners.get('*', []))
+        for listener in listeners:
+            # noinspection PyBroadException
+            try:
+                callback, args, kwargs = listener
+                log.debug("cb_type=%s" % type(callback))
+                args = args or ()
+                kwargs = kwargs or {}
+                cb = callback(msg, *args, **kwargs)
+                # The callback may or may not be an async function
+                if hasattr(cb,'__await__'):
+                    await cb
+
+            except Exception as e:
+                self.exception_handler(e)
 
     async def run(self, apps, subscribe_all=False, *, _test_msgs=[]):
         """Connect to the WebSocket and begin processing messages.

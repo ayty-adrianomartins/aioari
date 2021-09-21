@@ -51,7 +51,7 @@ async def on_start(objs, event):
     :param event: Event.
     """
     channel = objs['channel']
-    print(channel, event)
+    print("** START **", channel, event)
     channel.on_event('ChannelDtmfReceived', on_dtmf)
     await channel.answer()
     await channel.play(media='sound:hello-world')
@@ -59,13 +59,10 @@ async def on_start(objs, event):
 async def on_end(channel, event):
     """Callback for StasisEnd events.
 
-    On new channels, register the on_dtmf callback, answer the channel and
-    play "Hello, world"
-
     :param channel: Channel DTMF was received from.
     :param event: Event.
     """
-    print(channel, event)
+    print("** END **", channel, event)
 
 sessions = {}
 
