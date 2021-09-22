@@ -86,7 +86,7 @@ class Client(object):
 
         for ws in list(self.websockets):  # changes during processing
             try:
-                host, port = ws.get_extra_info('peername')
+                host, port = self.get_peer_info(ws)
             except TypeError:
                 # host, port = 'unknown', 'unknown'
                 self.websockets.remove(ws)
@@ -99,6 +99,18 @@ class Client(object):
 
         await self.swagger.close()
 
+    def get_peer_info(self, ws):
+        """Get information about a connected peer from a websocket.
+
+        :param ws: Websocket to get peer information from.
+        :return: A two-tuple (host,port) describing the connected peer. 
+        """
+        # info will either be a two-tuple (host, port) for an IPV4 address, 
+        # or a four-tuple (host, port, flowinfo, scope_id) for an IPV6 address.
+        # see https://docs.python.org/3/library/asyncio-protocol.html#asyncio.BaseTransport.get_extra_info
+        # we're only interested in host and port anyway
+        info = ws.get_extra_info('peername')
+        return tuple(info[:2])
 
     def get_repo(self, name):
         """Get a specific repo by name.
@@ -184,7 +196,7 @@ class Client(object):
                 log.error(ex)
                 await asyncio.sleep(1)
                 continue
-            host, port = ws.get_extra_info('peername')
+            host, port = self.get_peer_info(ws)
             log.info('Successfully connected to ws://%s:%s, app: %s' % (host, port, self.app))
             self.websockets.add(ws)
 
