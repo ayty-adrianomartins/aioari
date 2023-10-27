@@ -197,7 +197,8 @@ class BaseObject(object):
                     res = fn(objects, event, *args, **kwargs)
             else:
                 if self.id == objects.id:
-                    res = fn(objects, event, *args, **kwargs)
+                    if fn:
+                        res = fn(objects, event, *args, **kwargs)
             # The callback may or may not be an async function
             if inspect.iscoroutine(res):
                 await res
