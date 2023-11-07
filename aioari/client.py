@@ -165,7 +165,7 @@ class Client(object):
         for listener in listeners:
             # noinspection PyBroadException
             try:
-                callback, args, kwargs = listener
+                callback, event_obj, args, kwargs = listener
                 log.debug("cb_type=%s" % type(callback))
                 args = args or ()
                 kwargs = kwargs or {}
@@ -176,6 +176,12 @@ class Client(object):
 
             except Exception as e:
                 self.exception_handler(e)
+
+        if msg['type'] == "ChannelDestroyed":
+            for i in tuple(self.event_listeners.keys()):
+                for o in self.event_listeners[i]:
+                    if msg.get('channel').get('id') in str(o):
+                        self.event_listeners[i].remove(o)
 
     async def run(self, apps, subscribe_all=False, *, _test_msgs=[]):
         """Connect to the WebSocket and begin processing messages.
@@ -207,7 +213,7 @@ class Client(object):
             await self.__run(ws)
 
 
-    def on_event(self, event_type, event_cb, *args, **kwargs):
+    def on_event(self, event_type, event_cb, event_obj=None, *args, **kwargs):
         """Register callback for events with given type.
 
         :param event_type: String name of the event to register for.
@@ -220,7 +226,7 @@ class Client(object):
         for cb in listeners:
             if event_cb == cb[0]:
                 listeners.remove(cb)
-        callback_obj = (event_cb, args, kwargs)
+        callback_obj = (event_cb, event_obj, args, kwargs)
         log.debug("event_cb=%s" % event_cb)
         listeners.append(callback_obj)
         client = self

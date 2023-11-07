@@ -146,6 +146,12 @@ class BaseObject(object):
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.id)
 
+    def cleanup(self, event_obj):
+        for i in tuple(self.client.event_listeners.keys()):
+            for o in self.client.event_listeners[i]:
+                if event_obj in str(o):
+                    self.client.event_listeners[i].remove(o)
+
     def __getattr__(self, item):
         """Promote resource operations related to a single resource to methods
         on this class.
