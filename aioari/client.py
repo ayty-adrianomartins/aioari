@@ -179,9 +179,8 @@ class Client(object):
 
         if msg['type'] == "ChannelDestroyed":
             for i in tuple(self.event_listeners.keys()):
-                for o in self.event_listeners[i]:
-                    if msg.get('channel').get('id') in str(o):
-                        self.event_listeners[i].remove(o)
+                for o in [item for item in self.event_listeners[i] if msg.get('channel').get('id') in item]:
+                    self.event_listeners[i].remove(o)
 
     async def run(self, apps, subscribe_all=False, *, _test_msgs=[]):
         """Connect to the WebSocket and begin processing messages.
