@@ -21,6 +21,7 @@ import re
 import logging
 import json
 import inspect
+import asyncio
 
 from aiohttp.web_exceptions import HTTPNoContent, HTTPNotFound
 
@@ -179,7 +180,7 @@ class BaseObject(object):
 
         return enrich_operation
 
-    def on_event(self, event_type, fn, *args, **kwargs):
+    def on_event(self, event_type, fn, as_task=False, *args, **kwargs):
         """Register event callbacks for this specific domain object.
 
         :param event_type: Type of event to register for.
@@ -205,7 +206,9 @@ class BaseObject(object):
                     if fn:
                         res = fn(objects, event, *args, **kwargs)
             # The callback may or may not be an async function
-            if inspect.iscoroutine(res):
+            if inspect.iscoroutine(res) and as_task:
+                asyncio.create_task(res)
+            elif inspect.iscoroutine(res) and not as_task:
                 await res
             return res
 

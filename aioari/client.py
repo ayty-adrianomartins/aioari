@@ -212,7 +212,7 @@ class Client(object):
             await self.__run(ws)
 
 
-    def on_event(self, event_type, event_cb, event_obj=None, *args, **kwargs):
+    def on_event(self, event_type, event_cb, event_obj=None, as_task=False, *args, **kwargs):
         """Register callback for events with given type.
 
         :param event_type: String name of the event to register for.
@@ -242,7 +242,7 @@ class Client(object):
 
         return EventUnsubscriber()
 
-    def on_object_event(self, event_type, event_cb, factory_fn, model_id,
+    def on_object_event(self, event_type, event_cb, factory_fn, model_id, as_task=False,
                         *args, **kwargs):
         """Register callback for events with the given type. Event fields of
         the given model_id type are passed along to event_cb.
@@ -292,11 +292,11 @@ class Client(object):
                     obj = None
             return event_cb(obj, event, *args, **kwargs)
 
-        return self.on_event(event_type, extract_objects,
+        return self.on_event(event_type, extract_objects, as_task=as_task,
                              *args,
                              **kwargs)
 
-    def on_channel_event(self, event_type, fn, *args, **kwargs):
+    def on_channel_event(self, event_type, fn, as_task=False, *args, **kwargs):
         """Register callback for Channel related events
 
         :param event_type: String name of the event to register for.
@@ -306,7 +306,7 @@ class Client(object):
         :param kwargs: Keyword arguments to pass to fn
         """
         return self.on_object_event(event_type, fn, Channel, 'Channel',
-                                    *args, **kwargs)
+                                    as_task=as_task, *args, **kwargs)
 
     def on_bridge_event(self, event_type, fn, *args, **kwargs):
         """Register callback for Bridge related events
