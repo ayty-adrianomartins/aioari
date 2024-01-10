@@ -165,14 +165,17 @@ class Client(object):
         for listener in listeners:
             # noinspection PyBroadException
             try:
-                callback, event_obj, args, kwargs = listener
+                callback, event_obj, args, kwargs, as_task = listener
                 log.debug("cb_type=%s" % type(callback))
                 args = args or ()
                 kwargs = kwargs or {}
                 cb = callback(msg, *args, **kwargs)
                 # The callback may or may not be an async function
                 if hasattr(cb,'__await__'):
-                    await cb
+                    if as_task:
+                        asyncio.create_task(cb)
+                    else:
+                        await cb
 
             except Exception as e:
                 self.exception_handler(e)
@@ -225,7 +228,7 @@ class Client(object):
         for cb in listeners:
             if event_cb == cb[0]:
                 listeners.remove(cb)
-        callback_obj = (event_cb, event_obj, args, kwargs)
+        callback_obj = (event_cb, event_obj, args, kwargs, as_task)
         log.debug("event_cb=%s" % event_cb)
         listeners.append(callback_obj)
         client = self
